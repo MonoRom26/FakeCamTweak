@@ -14,10 +14,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Theos
-        uses: theos/setup-theos@v1
+        uses: beerpiss/theos-action@v1
 
       - name: Build .deb Package
-        run: make clean package FINALPACKAGE=1
+        run: make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
