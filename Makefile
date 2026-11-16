@@ -9,6 +9,6 @@ TWEAK_NAME = FakeCamTweak
 
 FakeCamTweak_FILES = Tweak.x
 FakeCamTweak_CFLAGS = -fobjc-arc
-FakeCamTweak_FRAMEWORKS = UIKit AVFoundation CoreMedia CoreVideo
+FakeCamTweak_FRAMEWORKS = UIKit AVFoundation CoreMedia CoreVideo PhotosUI UniformTypeIdentifiers
 
 include $(THEOS_MAKE_PATH)/tweak.mk
