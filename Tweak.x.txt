@@ -1,0 +1,74 @@
+#import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
+#import <CoreMedia/CoreMedia.h>
+
+static AVAssetReader *assetReader = nil;
+static AVAssetReaderTrackOutput *trackOutput = nil;
+static NSString *videoPath = @"/var/mobile/Media/DCIM/100APPLE/fake.mp4";
+
+// Helper function to initialize or loop the local video reader
+void setupVideoReader() {
+    NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:videoPath]) {
+        return;
+    }
+
+    AVAsset *asset = [AVAsset assetWithURL:videoURL];
+    NSError *error = nil;
+    assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
+    
+    AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+    if (!videoTrack) return;
+
+    // Match standard camera pixel format (420v or BGRA)
+    NSDictionary *outputSettings = @{
+        (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
+    };
+
+    trackOutput = [[AVAssetReaderTrackOutput alloc] initWithTrack:videoTrack outputSettings:outputSettings];
+    trackOutput.alwaysCopiesSampleData = NO;
+
+    if ([assetReader canAddOutput:trackOutput]) {
+        [assetReader addOutput:trackOutput];
+        [assetReader startReading];
+    }
+}
+
+// Fetch the next frame and adjust its presentation timestamp to match the live stream clock
+CMSampleBufferRef getNextReplacementFrame(CMSampleBufferRef originalBuffer) {
+    if (!assetReader || assetReader.status != AVAssetReaderStatusReading) {
+        setupVideoReader();
+    }
+
+    CMSampleBufferRef nextBuffer = [trackOutput copyNextSampleBuffer];
+    
+    // Loop video if it reaches the end
+    if (!nextBuffer && assetReader.status == AVAssetReaderStatusCompleted) {
+        setupVideoReader();
+        nextBuffer = [trackOutput copyNextSampleBuffer];
+    }
+
+    if (!nextBuffer) return NULL;
+
+    // Synchronize timing info with the live camera frame so the encoder doesn't drop it
+    CMSampleTimingInfo timingInfo;
+    CMSampleBufferGetSampleTimingInfo(originalBuffer, 0, &timingInfo);
+
+    CMSampleBufferRef adjustedBuffer = NULL;
+    CMSampleBufferCreateCopyWithNewTiming(kCFAllocatorDefault, nextBuffer, 1, &timingInfo, &adjustedBuffer);
+    
+    CFRelease(nextBuffer);
+    return adjustedBuffer;
+}
+
+// Hook AVCaptureVideoDataOutput to intercept the delegate
+%hook AVCaptureVideoDataOutput
+
+- (void)setSampleBufferDelegate:(id<AVCaptureVideoDataOutputSampleBufferDelegate>)sampleBufferDelegate queue:(dispatch_queue_t)sampleBufferCallbackQueue {
+    // Note: In a full implementation, wrap or swizzle the delegate's 
+    // captureOutput:didOutputSampleBuffer:fromConnection: method dynamically 
+    // using class_replaceMethod or a proxy NSObject class so all apps are covered.
+    %orig;
+}
+
+%end
