@@ -16,6 +16,11 @@ jobs:
       - name: Setup Theos
         uses: beerpiss/theos-action@v1
 
+      - name: Fix Line Endings (CRLF to LF)
+        run: |
+          tr -d '\r' < control > control.tmp && mv control.tmp control
+          tr -d '\r' < Makefile > Makefile.tmp && mv Makefile.tmp Makefile
+
       - name: Build .deb Package
         run: make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
