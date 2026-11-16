@@ -6,4 +6,4 @@ Description: Custom AVFoundation video frame replacement tweak for rootless iOS.
 Maintainer: YourName
 Author: YourName
 Section: Tweaks
-Depends: (>= 0.9.5000)
+Depends: mobilesubstrate | ellekit
