@@ -13,21 +13,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Theos
-        run: |
-          export THEOS=~/theos
-          git clone --recursive https://github.com $THEOS
-          
-          # Download patched iOS SDKs for Theos
-          curl -LO https://github.com
-          unzip master.zip
-          mv sdks-master/*.sdk $THEOS/sdks/
-          rm -rf sdks-master master.zip
+      - name: Setup Theos
+        uses: theos/setup-theos@v1
 
       - name: Build .deb Package
-        run: |
-          export THEOS=~/theos
-          make clean package FINALPACKAGE=1
+        run: make clean package FINALPACKAGE=1
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
